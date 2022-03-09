@@ -1,19 +1,29 @@
 SERVICE_NAME?=drioservice
 DOMAIN?=example.com
-VERSION=2
-MD_FILE?=saml-test-driov$(VERSION)-localhost.xml
+MD_FILE?=saml-test-drio-localhost.xml
 
+## help: print this help message
+.PHONY: help
+help:
+	@echo 'Usage:'
+	@sed -n 's/^##//p' ${MAKEFILE_LIST} | column -t -s ':' | sed -e 's/^/ /'
+
+## run: start go server dev mode
+.PHONY: run
 run: $(SERVICE_NAME).cert $(SERVICE_NAME).key
-	go run server.go
+	cd src; go run server.go
 
-$(SERVICE_NAME).cert $(SERVICE_NAME).key:
+$(SERVICE_NAME).cert $(SERVICE_NAME).key: cert
 	openssl req -x509 \
 		-newkey rsa:2048 \
-		-keyout $(SERVICE_NAME).key \
-	  -out $(SERVICE_NAME).cert \
+		-keyout cert/$(SERVICE_NAME).key \
+	  -out cert/$(SERVICE_NAME).cert \
 	  -days 365 \
 	  -nodes \
 	  -subj "/CN=$(SEVICE_NAME).$(DOMAIN)"
+
+cert:
+	mkdir cert
 
 mod: go.mod
 

@@ -17,7 +17,7 @@ func hello(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	keyPair, err := tls.LoadX509KeyPair("drioservice.cert", "drioservice.key")
+	keyPair, err := tls.LoadX509KeyPair("../cert/drioservice.cert", "../cert/drioservice.key")
 	if err != nil {
 		panic(err) // TODO handle error
 	}
