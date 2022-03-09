@@ -1,5 +1,10 @@
 SERVICE_NAME?=drioservice
 DOMAIN?=example.com
+VERSION=2
+MD_FILE?=saml-test-driov$(VERSION)-localhost.xml
+
+run: $(SERVICE_NAME).cert $(SERVICE_NAME).key
+	go run server.go
 
 $(SERVICE_NAME).cert $(SERVICE_NAME).key:
 	openssl req -x509 \
@@ -14,3 +19,11 @@ mod: go.mod
 
 go.mod:
 	go mod init github.com/drio/aws-drio-stack
+
+metadata: $(MD_FILE)
+
+$(MD_FILE):
+	curl -s localhost:8000/saml/metadata > $@
+
+clean:
+	rm -f saml-test-drio-localhost.xml *.cert *.key
