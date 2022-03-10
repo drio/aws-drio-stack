@@ -37,7 +37,7 @@ func main() {
 		panic(err) // TODO handle error
 	}
 
-	rootURL, err := url.Parse("http://localhost:8000")
+	rootURL, err := url.Parse("http://ec2-18-223-239-5.us-east-2.compute.amazonaws.com:8080")
 	if err != nil {
 		panic(err) // TODO handle error
 	}

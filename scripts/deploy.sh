@@ -11,8 +11,7 @@ EC2_INSTANCE_TYPE=t2.small
 #GH_BRANCH=master
 
 TEMPLATE=./templates/main.yml
-if [ ! -f $TEMPLATE ]; then
-  echo "Template does not exist"
+if [ ! -f $TEMPLATE ]; then echo "Template does not exist"
   exit 1
 fi
 
@@ -38,5 +37,6 @@ aws cloudformation deploy \
 
 # If the deploy succeeded, show the DNS name of the created instance
 if [ $? -eq 0 ]; then
-  aws cloudformation list-exports  --query "Exports[?Name=='InstanceDNS'].Value"
+  aws cloudformation list-exports \
+    --query "Exports[?starts_with(Name,'InstanceEndpoint')].Value"
 fi
