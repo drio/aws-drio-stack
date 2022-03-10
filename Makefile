@@ -10,10 +10,10 @@ help:
 
 ## run: start go server dev mode
 .PHONY: run
-run: $(SERVICE_NAME).cert $(SERVICE_NAME).key
+run: cert/$(SERVICE_NAME).cert cert/$(SERVICE_NAME).key
 	cd src; go run server.go
 
-$(SERVICE_NAME).cert $(SERVICE_NAME).key: cert
+cert/$(SERVICE_NAME).cert cert/$(SERVICE_NAME).key: cert
 	openssl req -x509 \
 		-newkey rsa:2048 \
 		-keyout cert/$(SERVICE_NAME).key \
