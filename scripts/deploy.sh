@@ -39,4 +39,7 @@ aws cloudformation deploy \
 if [ $? -eq 0 ]; then
   aws cloudformation list-exports \
     --query "Exports[?starts_with(Name,'InstanceEndpoint')].Value"
+  aws cloudformation list-exports \
+    --query "Exports[?starts_with(Name,'LBEndpoint')].Value"
 fi
+

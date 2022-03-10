@@ -63,4 +63,3 @@ run-test-server:
 	#curl http://169.254.169.254/latest/meta-data/public-hostname > public/index.html
 	cat /etc/hostname > public/index.html
 	cd public; python -m SimpleHTTPServer $(PORT)
-
