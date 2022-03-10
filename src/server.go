@@ -1,3 +1,4 @@
+// vim: set foldmethod=indent foldlevel=1 et:
 package main
 
 import (
@@ -47,9 +48,10 @@ func main() {
 		Certificate: keyPair.Leaf,
 		IDPMetadata: idpMetadata,
 	})
+
 	app := http.HandlerFunc(hello)
 	http.Handle("/hello", samlSP.RequireAccount(app))
 	http.Handle("/saml/", samlSP)
 	fmt.Println("Listening... ")
-	http.ListenAndServe(":8000", nil)
+	http.ListenAndServe(":8080", nil)
 }

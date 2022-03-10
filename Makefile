@@ -1,6 +1,11 @@
+# vim: set foldmethod=indent foldlevel=1 et:
 SERVICE_NAME?=drioservice
 DOMAIN?=example.com
 MD_FILE?=saml-test-drio-localhost.xml
+
+EC2_IP?=18.119.1.220
+EC2_USER?=ec2-user
+EC2_CER?=~drio/.ssh/drio_aws_tufts.cer
 
 ## help: print this help message
 .PHONY: help
@@ -24,6 +29,16 @@ cert/$(SERVICE_NAME).cert cert/$(SERVICE_NAME).key: cert
 
 cert:
 	mkdir cert
+
+## aws/list-ec2: list ec2 instances
+.PHONY: aws/list-ec2
+aws/list-ec2:
+	aws ec2 describe-instances
+
+## aws/ssh: ssh to instance
+.PHONY: aws/ssh
+aws/ssh:
+	ssh -i $(EC2_CER) $(EC2_USER)@$(EC2_IP)
 
 mod: go.mod
 
