@@ -7,6 +7,9 @@ EC2_INSTANCE_TYPE=t2.small
 DOMAIN=drtufts.net
 SUBDOMAIN=staging
 
+CERT=`aws acm list-certificates --region $REGION --output text \
+--query "CertificateSummaryList[?DomainName=='$DOMAIN'].CertificateArn | [0]"`
+
 #GH_ACCESS_TOKEN=$(cat .github/token)
 #GH_OWNER=$(cat .github/owner)
 #GH_REPO=$(cat .github/repo)
@@ -37,7 +40,8 @@ aws cloudformation deploy \
   --capabilities CAPABILITY_NAMED_IAM \
   --parameter-overrides EC2InstanceType=$EC2_INSTANCE_TYPE \
     Domain=$DOMAIN \
-    SubDomain=$SUBDOMAIN
+    SubDomain=$SUBDOMAIN \
+    Certificate=$CERT
 
 # If the deploy succeeded, show the DNS name of the created instance
 if [ $? -eq 0 ]; then

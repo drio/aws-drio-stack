@@ -26,12 +26,21 @@ run:
 cert: 
 	mkdir cert
 	openssl req -x509 \
-		-newkey rsa:2048 \
+		-newkey rsa:2048 \ 
 		-keyout cert/$(SERVICE_NAME).key \
 	  -out cert/$(SERVICE_NAME).cert \
 	  -days 365 \
 	  -nodes \
 	  -subj "/CN=$(SEVICE_NAME).$(DOMAIN)"
+
+## server-cert: create x509 cert for the communication between the loadbalancer and the server
+.PHONY: server-cert
+server-cert:
+	mkdir -p cert
+	openssl req -new -newkey rsa:4096 -days 3650 \
+	-nodes -x509 -subj "/C=/ST=/L=/O=/CN=localhost" \
+	-keyout cert/server-key.pem \
+	-out cert/server-cert.pem
 
 ## aws/list-ec2: list ec2 instances
 .PHONY: aws/list-ec2

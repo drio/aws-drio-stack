@@ -7,6 +7,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
+	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -23,6 +24,15 @@ func root(w http.ResponseWriter, r *http.Request) {
 		Welcome. You don't need to authenticate to see this. 🤘. Try <a href='/hello'>/hello</a> instead.
 	</p>
 	`)
+}
+
+func rootPlain(w http.ResponseWriter, r *http.Request) {
+	hostname, err := os.Hostname()
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	fmt.Fprintf(w, "/ welcome. -- %s", hostname)
 }
 
 func hello(w http.ResponseWriter, r *http.Request) {
@@ -69,8 +79,16 @@ func main() {
 	app := http.HandlerFunc(hello)
 	http.Handle("/hello", samlSP.RequireAccount(app))
 	http.Handle("/saml/", samlSP)
-	//rootHandle := http.HandlerFunc(root)
-	//http.Handle("/", rootHandle)
-	fmt.Println("Listening... ")
-	http.ListenAndServe(":8080", nil)
+	rootHandle := http.HandlerFunc(rootPlain)
+	http.Handle("/", rootHandle)
+	go (func() {
+		fmt.Println("Listening HTTP:8080... ")
+		http.ListenAndServe(":8080", nil)
+	})()
+
+	fmt.Println("Listening HTTPS:8443... ")
+	err = http.ListenAndServeTLS(":8443", "../cert/server-cert.pem", "../cert/server-key.pem", nil)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
