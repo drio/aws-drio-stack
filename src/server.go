@@ -14,6 +14,17 @@ import (
 	"github.com/crewjam/saml/samlsp"
 )
 
+func root(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/html")
+	fmt.Fprintf(w, `<!DOCTYPE html>
+	<html lang="en">
+	<meta charset=utf-8>
+	<p>
+		Welcome. You don't need to authenticate to see this. 🤘. Try <a href='/hello'>/hello</a> instead.
+	</p>
+	`)
+}
+
 func hello(w http.ResponseWriter, r *http.Request) {
 	hostname, err := os.Hostname()
 	if err != nil {
@@ -56,8 +67,10 @@ func main() {
 	})
 
 	app := http.HandlerFunc(hello)
+	rootHandle := http.HandlerFunc(root)
 	http.Handle("/hello", samlSP.RequireAccount(app))
 	http.Handle("/saml/", samlSP)
+	http.Handle("/", rootHandle)
 	fmt.Println("Listening... ")
 	http.ListenAndServe(":8080", nil)
 }
