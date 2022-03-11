@@ -2,6 +2,7 @@ SERVICE_NAME?=drioservice
 DOMAIN?=example.com
 MD_FILE?=saml-test-drio-localhost.xml
 
+URL=https://staging.drtufts.net
 EC2_IP?=
 EC2_USER?=ec2-user
 EC2_CER?=~drio/.ssh/drio_aws_tufts.cer
@@ -63,7 +64,7 @@ go.mod:
 	go mod init github.com/drio/aws-drio-stack
 
 metadata:
-	@curl -s $(HOST_DNS):$(PORT)/saml/metadata
+	@curl -s $(URL)/saml/metadata
 
 ## run-test-server: run an http server for testing purposes
 .PHONY: run-test-server

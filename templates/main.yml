@@ -18,6 +18,9 @@ Parameters:
     Type: String
   SubDomain:
     Type: String
+  Certificate:
+    Type: String
+    Description: 'An existing ACM certificate ARN for your domain'
 
 Resources:
   SecurityGroup:
@@ -26,6 +29,14 @@ Resources:
       VpcId: !Ref VPC
       GroupDescription: !Sub 'Security group for ${AWS::StackName}'
       SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 8443
+          ToPort: 8443
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
         - IpProtocol: tcp
           FromPort: 8080
           ToPort: 8080
@@ -308,6 +319,34 @@ Resources:
         - Key: Name
           Value: !Ref AWS::StackName
 
+  HTTPSLoadBalancerListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref HTTPSLoadBalancerTargetGroup
+      LoadBalancerArn: !Ref LoadBalancer
+      Certificates:
+        - CertificateArn: !Ref Certificate
+      Port: 443
+      Protocol: HTTPS
+
+  HTTPSLoadBalancerTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      TargetType: instance
+      Port: 8443
+      Protocol: HTTPS
+      VpcId: !Ref VPC
+      HealthCheckEnabled: true
+      HealthCheckProtocol: HTTPS
+      Targets:
+        - Id: !Ref Instance
+        - Id: !Ref Instance2
+      Tags:
+        - Key: Name
+          Value: !Ref AWS::StackName
+
 Outputs:
   InstanceEndpoint:
     Description: The DNS name for the created instance
@@ -327,6 +366,10 @@ Outputs:
     Export:
       Name: LBEndpoint
 
-  DnsUrl:
+  HTTPEndpoint:
     Description: The DNS url
     Value: !Sub 'http://${DNS}'
+
+  HTTPSEndpoint:
+    Description: The DNS url
+    Value: !Sub 'https://${DNS}'
