@@ -64,7 +64,7 @@ func main() {
 		panic(err) // TODO handle error
 	}
 
-	rootURL, err := url.Parse("http://staging.drtufts.net:80")
+	rootURL, err := url.Parse("https://staging.drtufts.net")
 	if err != nil {
 		panic(err) // TODO handle error
 	}
