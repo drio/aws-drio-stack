@@ -9,12 +9,18 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"os"
 
 	"github.com/crewjam/saml/samlsp"
 )
 
 func hello(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "- Hello, %s!", samlsp.AttributeFromContext(r.Context(), "uid"))
+	hostname, err := os.Hostname()
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	fmt.Fprintf(w, "- Hello, %s (%s)!", samlsp.AttributeFromContext(r.Context(), "uid"), hostname)
 }
 
 func main() {
@@ -37,7 +43,7 @@ func main() {
 		panic(err) // TODO handle error
 	}
 
-	rootURL, err := url.Parse("http://ec2-18-223-239-5.us-east-2.compute.amazonaws.com:8080")
+	rootURL, err := url.Parse("http://drio-LoadB-O1GTK0UDL5U-1155326588.us-east-2.elb.amazonaws.com:80")
 	if err != nil {
 		panic(err) // TODO handle error
 	}
