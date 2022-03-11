@@ -54,7 +54,7 @@ func main() {
 		panic(err) // TODO handle error
 	}
 
-	rootURL, err := url.Parse("http://drio-LoadB-O1GTK0UDL5U-1155326588.us-east-2.elb.amazonaws.com:80")
+	rootURL, err := url.Parse("http://staging.drtufts.net:80")
 	if err != nil {
 		panic(err) // TODO handle error
 	}
@@ -67,10 +67,10 @@ func main() {
 	})
 
 	app := http.HandlerFunc(hello)
-	rootHandle := http.HandlerFunc(root)
 	http.Handle("/hello", samlSP.RequireAccount(app))
 	http.Handle("/saml/", samlSP)
-	http.Handle("/", rootHandle)
+	//rootHandle := http.HandlerFunc(root)
+	//http.Handle("/", rootHandle)
 	fmt.Println("Listening... ")
 	http.ListenAndServe(":8080", nil)
 }

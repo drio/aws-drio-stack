@@ -14,6 +14,10 @@ Parameters:
     Type: AWS::EC2::KeyPair::KeyName
     ConstraintDescription: must be the name of an existing EC2 KeyPair.
     Default: 'drio_aws_tufts'
+  Domain:
+    Type: String
+  SubDomain:
+    Type: String
 
 Resources:
   SecurityGroup:
@@ -146,6 +150,16 @@ Resources:
               --stack ${AWS::StackName} \
               --region ${AWS::Region} \
               --resource ${!LOGICAL_ID}
+
+  DNS:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneName: !Sub '${Domain}.'
+      Name: !Sub '${SubDomain}.${Domain}.'
+      Type: A
+      AliasTarget:
+        HostedZoneId: !GetAtt LoadBalancer.CanonicalHostedZoneID
+        DNSName: !GetAtt LoadBalancer.DNSName
 
   VPC:
     Type: AWS::EC2::VPC
@@ -312,3 +326,7 @@ Outputs:
     Value: !Sub 'http://${LoadBalancer.DNSName}:80'
     Export:
       Name: LBEndpoint
+
+  DnsUrl:
+    Description: The DNS url
+    Value: !Sub 'http://${DNS}'

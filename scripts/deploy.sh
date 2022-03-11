@@ -4,6 +4,8 @@ AWS_ACCOUNT_ID=`aws sts get-caller-identity --query "Account" --output text`
 STACK_NAME=drio-apps-$(openssl rand -hex 12)
 REGION=us-east-2
 EC2_INSTANCE_TYPE=t2.small
+DOMAIN=drtufts.net
+SUBDOMAIN=staging
 
 #GH_ACCESS_TOKEN=$(cat .github/token)
 #GH_OWNER=$(cat .github/owner)
@@ -33,7 +35,9 @@ aws cloudformation deploy \
   --template-file $TEMPLATE \
   --no-fail-on-empty-changeset \
   --capabilities CAPABILITY_NAMED_IAM \
-  --parameter-overrides EC2InstanceType=$EC2_INSTANCE_TYPE
+  --parameter-overrides EC2InstanceType=$EC2_INSTANCE_TYPE \
+    Domain=$DOMAIN \
+    SubDomain=$SUBDOMAIN
 
 # If the deploy succeeded, show the DNS name of the created instance
 if [ $? -eq 0 ]; then

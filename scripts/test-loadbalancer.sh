@@ -9,6 +9,6 @@ fi
 (
 for i in {1..10}
 do 
-  curl -s http://$endpoint:80 
+  curl -s http://$endpoint:80  
 done 
 ) | sort | uniq -c
