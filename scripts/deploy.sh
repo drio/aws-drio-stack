@@ -22,8 +22,7 @@ EC2_INSTANCE_TYPE=t2.small
 #SUBDOMAIN=staging
 STACK_NAME=`echo "drio-$SUBDOMAIN-$DOMAIN" | gtr "." "-"`
 
-CERT=`aws acm list-certificates --region $REGION --output text \
---query "CertificateSummaryList[?DomainName=='$DOMAIN'].CertificateArn | [0]"`
+CERT=`aws acm list-certificates --region $REGION --output text --query "CertificateSummaryList[?DomainName=='$DOMAIN'].CertificateArn | [0]"`
 
 #GH_ACCESS_TOKEN=$(cat .github/token)
 #GH_OWNER=$(cat .github/owner)

@@ -27,13 +27,15 @@ func root(w http.ResponseWriter, r *http.Request) {
 	`)
 }
 
-func rootPlain(w http.ResponseWriter, r *http.Request) {
-	hostname, err := os.Hostname()
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+func genHandler(env string) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		hostname, err := os.Hostname()
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+		fmt.Fprintf(w, "/ welcome. env:%s -- %s", env, hostname)
 	}
-	fmt.Fprintf(w, "/ welcome. -- %s", hostname)
 }
 
 func hello(w http.ResponseWriter, r *http.Request) {
@@ -96,7 +98,7 @@ func main() {
 	app := http.HandlerFunc(hello)
 	http.Handle("/hello", samlSP.RequireAccount(app))
 	http.Handle("/saml/", samlSP)
-	rootHandle := http.HandlerFunc(rootPlain)
+	rootHandle := http.HandlerFunc(genHandler(*env))
 	http.Handle("/", rootHandle)
 	go (func() {
 		log.Println("Listening HTTP:8080... ")
