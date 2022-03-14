@@ -1,11 +1,26 @@
 #!/bin/bash -e
 
+usage() {
+  cat <<EOF
+Usage: $(basename $0) <domain> <subdomain>
+
+Example:
+  $0 drtufts.net staging
+EOF
+  exit 0
+}
+
+DOMAIN=$1
+SUBDOMAIN=$2
+[ ".$DOMAIN" == "." ] && usage
+[ ".$SUBDOMAIN" == "." ] && usage
+
 AWS_ACCOUNT_ID=`aws sts get-caller-identity --query "Account" --output text`
-STACK_NAME=drio-apps-$(openssl rand -hex 12)
 REGION=us-east-2
 EC2_INSTANCE_TYPE=t2.small
-DOMAIN=drtufts.net
-SUBDOMAIN=staging
+#DOMAIN=drtufts.net
+#SUBDOMAIN=staging
+STACK_NAME=`echo "drio-$SUBDOMAIN-$DOMAIN" | gtr "." "-"`
 
 CERT=`aws acm list-certificates --region $REGION --output text \
 --query "CertificateSummaryList[?DomainName=='$DOMAIN'].CertificateArn | [0]"`

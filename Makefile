@@ -1,8 +1,6 @@
-SERVICE_NAME?=drioservice
-DOMAIN?=example.com
-MD_FILE?=saml-test-drio-localhost.xml
-
-URL=https://staging.drtufts.net
+ENV?=staging
+DOMAIN?=drtufts.net
+URL=https://$(ENV).$(DOMAIN)
 EC2_IP?=
 EC2_USER?=ec2-user
 EC2_CER?=~drio/.ssh/drio_aws_tufts.cer
@@ -20,7 +18,7 @@ help:
 ## run: start go server dev mode
 .PHONY: run
 run:
-	cd src; go run server.go
+	cd src; go run server.go -domain=$(DOMAIN) -env=$(ENV)
 
 ## cert: create x509 cert to interact with the IDP
 .PHONY: cert
@@ -28,8 +26,8 @@ cert:
 	mkdir cert
 	openssl req -x509 \
 		-newkey rsa:2048 \ 
-		-keyout cert/$(SERVICE_NAME).key \
-	  -out cert/$(SERVICE_NAME).cert \
+		-keyout cert/saml.key \
+	  -out cert/saml.cert \
 	  -days 365 \
 	  -nodes \
 	  -subj "/CN=$(SEVICE_NAME).$(DOMAIN)"

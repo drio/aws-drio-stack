@@ -6,6 +6,7 @@ import (
 	"crypto/rsa"
 	"crypto/tls"
 	"crypto/x509"
+	"flag"
 	"fmt"
 	"log"
 	"net/http"
@@ -45,7 +46,19 @@ func hello(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	keyPair, err := tls.LoadX509KeyPair("../cert/drioservice.cert", "../cert/drioservice.key")
+	env := flag.String("env", "staging", "Environment: staging or prod")
+	domain := flag.String("domain", "", "Domain name")
+	flag.Parse()
+	if *env != "staging" && *env != "prod" {
+		log.Println("Only valid environments are: staging or prod")
+		os.Exit(0)
+	}
+	if *domain == "" {
+		log.Println("Invalid domain name: ", *domain)
+		os.Exit(0)
+	}
+
+	keyPair, err := tls.LoadX509KeyPair("../cert/saml.cert", "../cert/saml.key")
 	if err != nil {
 		panic(err) // TODO handle error
 	}
@@ -64,7 +77,8 @@ func main() {
 		panic(err) // TODO handle error
 	}
 
-	rootURL, err := url.Parse("https://staging.drtufts.net")
+	//"https://staging.drtufts.net"
+	rootURL, err := url.Parse(fmt.Sprintf("https://%s.%s", *env, *domain))
 	if err != nil {
 		panic(err) // TODO handle error
 	}
@@ -76,17 +90,20 @@ func main() {
 		IDPMetadata: idpMetadata,
 	})
 
+	log.Println("Domain: ", *domain)
+	log.Println("Env: ", *env)
+
 	app := http.HandlerFunc(hello)
 	http.Handle("/hello", samlSP.RequireAccount(app))
 	http.Handle("/saml/", samlSP)
 	rootHandle := http.HandlerFunc(rootPlain)
 	http.Handle("/", rootHandle)
 	go (func() {
-		fmt.Println("Listening HTTP:8080... ")
+		log.Println("Listening HTTP:8080... ")
 		http.ListenAndServe(":8080", nil)
 	})()
 
-	fmt.Println("Listening HTTPS:8443... ")
+	log.Println("Listening HTTPS:8443... ")
 	err = http.ListenAndServeTLS(":8443", "../cert/server-cert.pem", "../cert/server-key.pem", nil)
 	if err != nil {
 		log.Fatal(err)
