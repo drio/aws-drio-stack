@@ -1,3 +1,4 @@
+SERVICE_NAME=drioservice
 ENV?=staging
 DOMAIN?=drtufts.net
 URL=https://$(ENV).$(DOMAIN)
@@ -30,7 +31,7 @@ cert:
 	  -out cert/saml.cert \
 	  -days 365 \
 	  -nodes \
-	  -subj "/CN=$(SEVICE_NAME).$(DOMAIN)"
+	  -subj "/CN=$(SERVICE_NAME).$(DOMAIN)"
 
 ## server-cert: create x509 cert for the communication between the loadbalancer and the server
 .PHONY: server-cert

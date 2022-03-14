@@ -45,12 +45,14 @@ echo "stack_name: $STACK_NAME"
 #   --no-fail-on-empty-changeset \
 #   --capabilities CAPABILITY_NAMED_IAM
 
+cat $TEMPLATE | sed "s/XRANDX/$RANDOM/g" > template.instance.yml
+
 # Deploy the CloudFormation template
 echo -e "\n\n=========== Deploying main.yml ==========="
 aws cloudformation deploy \
   --region $REGION \
   --stack-name $STACK_NAME \
-  --template-file $TEMPLATE \
+  --template-file ./template.instance.yml \
   --no-fail-on-empty-changeset \
   --capabilities CAPABILITY_NAMED_IAM \
   --parameter-overrides EC2InstanceType=$EC2_INSTANCE_TYPE \
@@ -65,4 +67,3 @@ if [ $? -eq 0 ]; then
   aws cloudformation list-exports \
     --query "Exports[?starts_with(Name,'LBEndpoint')].Value"
 fi
-

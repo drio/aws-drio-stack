@@ -352,24 +352,16 @@ Outputs:
     Description: The DNS name for the created instance
     Value: !Sub 'http://${Instance.PublicDnsName}:8080'
     Export:
-      Name: InstanceEndpoint
+      Name: InstanceEndpoint-XRANDX
 
   InstanceEndpoint2:
     Description: The DNS name for the created instance
     Value: !Sub 'http://${Instance2.PublicDnsName}:8080'
     Export:
-      Name: InstanceEndpoint2
+      Name: InstanceEndpoint2-XRANDX
 
   LBEndpoint:
     Description: The DNS name for the LB
     Value: !Sub 'http://${LoadBalancer.DNSName}:80'
     Export:
-      Name: LBEndpoint
-
-  HTTPEndpoint:
-    Description: The DNS url
-    Value: !Sub 'http://${DNS}'
-
-  HTTPSEndpoint:
-    Description: The DNS url
-    Value: !Sub 'https://${DNS}'
+      Name: LBEndpoint-XRANDX

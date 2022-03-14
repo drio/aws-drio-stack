@@ -3,3 +3,4 @@
 *.xml
 cert
 template.yaml
+template.instance.yml
