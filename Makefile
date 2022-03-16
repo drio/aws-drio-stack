@@ -7,9 +7,7 @@ URL=https://$(ENV).$(DOMAIN)
 EC2_USER?=ec2-user
 EC2_CER?=~drio/.ssh/drio_aws_tufts.cer
 
-HOST_DNS=ec2-18-223-239-5.us-east-2.compute.amazonaws.com
 PORT=8080
-MD_FILE=saml-test-drio-$(HOST_DNS).xml
 
 ## help: print this help message
 .PHONY: help
