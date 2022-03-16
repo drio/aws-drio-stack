@@ -1,8 +1,9 @@
-SERVICE_NAME=drioservice
 ENV?=staging
 DOMAIN?=drtufts.net
-URL=https://$(ENV).$(DOMAIN)
 EC2_IP?=
+SERVICE_NAME=drioservice
+
+URL=https://$(ENV).$(DOMAIN)
 EC2_USER?=ec2-user
 EC2_CER?=~drio/.ssh/drio_aws_tufts.cer
 
@@ -84,24 +85,23 @@ deploy/service/status:
 	ssh -i $(EC2_CER) $(EC2_USER)@$(EC2_IP) "systemctl status goserver"
 
 ## deploy/service/%: install service on remote machine env=(prod, staging)
-.PHONY: deploy/service/%
-deploy/service/%:
-	ssh -i $(EC2_CER) $(EC2_USER)@$(EC2_IP) "sudo make service/install/$(ENV)"
+.PHONY: deploy/service/install
+deploy/service/install:
+	ssh -i $(EC2_CER) $(EC2_USER)@$(EC2_IP) "sudo make service/install ENV=$(ENV)"
 
-## deploy/uninstall/service: uninstall/remove service from remote machine
-.PHONY: deploy/uninstall/service
-deploy/uninstall/service:
+## deploy/service/install: uninstall/remove service from remote machine
+.PHONY: deploy/service/uninstall
+deploy/service/uninstall:
 	ssh -i $(EC2_CER) $(EC2_USER)@$(EC2_IP) "sudo make service/uninstall"
 
-
-## service/install/%: install the systemd service on current machine 
-.PHONY: service/install/%
-service/install/%:
+## service/install: install the systemd service on current machine
+.PHONY: service/install
+service/install:
 	cd src; \
 	/usr/local/go/bin/go build server.go && \
 	cd .. && \
 	cat ./service/goserver.service | \
-		sed 's/__ENV__/$*/g' | \
+		sed 's/__ENV__/$(ENV)/g' | \
 		sed 's/__DOMAIN__/$(DOMAIN)/g' \
 		> /lib/systemd/system/goserver.service && \
 	chmod 644 /lib/systemd/system/goserver.service && \
@@ -109,7 +109,7 @@ service/install/%:
 	systemctl enable goserver && \
 	systemctl restart goserver
 
-## service/uninstall: uninstall the systemd service on current machine 
+## service/uninstall: uninstall the systemd service on current machine
 .PHONY: service/uninstall
 service/uninstall:
 	sudo systemctl stop goserver
