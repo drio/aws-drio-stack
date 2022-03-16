@@ -16,11 +16,28 @@ import (
 	"github.com/crewjam/saml/samlsp"
 )
 
+var samlMiddleware *samlsp.Middleware
+
+func logout(w http.ResponseWriter, r *http.Request) {
+	nameID := samlsp.AttributeFromContext(r.Context(), "urn:oasis:names:tc:SAML:attribute:subject-id")
+	url, err := samlMiddleware.ServiceProvider.MakeRedirectLogoutRequest(nameID, "")
+	if err != nil {
+		panic(err) // TODO handle error
+	}
+
+	err = samlMiddleware.Session.DeleteSession(w, r)
+	if err != nil {
+		panic(err) // TODO handle error
+	}
+
+	w.Header().Add("Location", url.String())
+	w.WriteHeader(http.StatusFound)
+}
+
 func root(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 	fmt.Fprintf(w, `<!DOCTYPE html>
-	<html lang="en">
-	<meta charset=utf-8>
+	<html lang="en"> <meta charset=utf-8>
 	<p>
 		Welcome. You don't need to authenticate to see this. 🤘. Try <a href='/hello'>/hello</a> instead.
 	</p>
@@ -85,19 +102,23 @@ func main() {
 		panic(err) // TODO handle error
 	}
 
-	samlSP, _ := samlsp.New(samlsp.Options{
+	samlMiddleware, _ = samlsp.New(samlsp.Options{
 		URL:         *rootURL,
 		Key:         keyPair.PrivateKey.(*rsa.PrivateKey),
 		Certificate: keyPair.Leaf,
 		IDPMetadata: idpMetadata,
+		SignRequest: true, // some IdP require the SLO request to be signed
 	})
 
 	log.Println("Domain: ", *domain)
 	log.Println("Env: ", *env)
 
 	app := http.HandlerFunc(hello)
-	http.Handle("/hello", samlSP.RequireAccount(app))
-	http.Handle("/saml/", samlSP)
+	slo := http.HandlerFunc(logout)
+	http.Handle("/hello", samlMiddleware.RequireAccount(app))
+	http.Handle("/saml/", samlMiddleware)
+	http.Handle("/logout", slo)
+
 	rootHandle := http.HandlerFunc(genHandler(*env))
 	http.Handle("/", rootHandle)
 	go (func() {
