@@ -7,8 +7,6 @@ URL=https://$(ENV).$(DOMAIN)
 EC2_USER?=ec2-user
 EC2_CER?=~drio/.ssh/drio_aws_tufts.cer
 
-PORT=8080
-
 ## help: print this help message
 .PHONY: help
 help:
@@ -70,7 +68,7 @@ run-test-server:
 	mkdir -p public
 	#curl http://169.254.169.254/latest/meta-data/public-hostname > public/index.html
 	cat /etc/hostname > public/index.html
-	cd public; python -m SimpleHTTPServer $(PORT)
+	cd public; python -m SimpleHTTPServer 8080
 
 ## deploy: deploy new code and restart server
 .PHONY: deploy
