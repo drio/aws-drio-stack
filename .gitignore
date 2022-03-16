@@ -4,3 +4,6 @@
 cert
 template.yaml
 template.instance.yml
+template.instance.*
+service/goserver.service.*
+src/server

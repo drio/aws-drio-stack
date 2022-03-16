@@ -1,57 +1,25 @@
 #!/bin/bash -e
 
-usage() {
-  cat <<EOF
-Usage: $(basename $0) <domain> <subdomain>
-
-Example:
-  $0 drtufts.net staging
-EOF
-  exit 0
-}
-
-DOMAIN=$1
-SUBDOMAIN=$2
-[ ".$DOMAIN" == "." ] && usage
-[ ".$SUBDOMAIN" == "." ] && usage
+SCRIPTPATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
+source $SCRIPTPATH/common.sh
 
 AWS_ACCOUNT_ID=`aws sts get-caller-identity --query "Account" --output text`
-REGION=us-east-2
-EC2_INSTANCE_TYPE=t2.small
-#DOMAIN=drtufts.net
-#SUBDOMAIN=staging
-STACK_NAME=`echo "drio-$SUBDOMAIN-$DOMAIN" | gtr "." "-"`
-
 CERT=`aws acm list-certificates --region $REGION --output text --query "CertificateSummaryList[?DomainName=='$DOMAIN'].CertificateArn | [0]"`
-
-#GH_ACCESS_TOKEN=$(cat .github/token)
-#GH_OWNER=$(cat .github/owner)
-#GH_REPO=$(cat .github/repo)
-#GH_BRANCH=master
 
 TEMPLATE=./templates/main.yml
 if [ ! -f $TEMPLATE ]; then echo "Template does not exist"
   exit 1
 fi
 
-echo "stack_name: $STACK_NAME"
-# Deploys static resources
-# echo -e "\n\n=========== Deploying setup.yml ==========="
-# aws cloudformation deploy \
-#   --region $REGION \
-#   --stack-name $STACK_NAME-setup \
-#   --template-file setup.yml \
-#   --no-fail-on-empty-changeset \
-#   --capabilities CAPABILITY_NAMED_IAM
-
-cat $TEMPLATE | sed "s/XRANDX/$RANDOM/g" > template.instance.yml
+cat $TEMPLATE | sed "s/XRANDX/$RANDOM/g" > $I_TEMPLATE
+trap 'rm -f -- "$I_TEMPLATE"' EXIT
 
 # Deploy the CloudFormation template
 echo -e "\n\n=========== Deploying main.yml ==========="
 aws cloudformation deploy \
   --region $REGION \
   --stack-name $STACK_NAME \
-  --template-file ./template.instance.yml \
+  --template-file $I_TEMPLATE \
   --no-fail-on-empty-changeset \
   --capabilities CAPABILITY_NAMED_IAM \
   --parameter-overrides EC2InstanceType=$EC2_INSTANCE_TYPE \

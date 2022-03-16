@@ -34,7 +34,7 @@ func genHandler(env string) func(http.ResponseWriter, *http.Request) {
 			fmt.Println(err)
 			os.Exit(1)
 		}
-		fmt.Fprintf(w, "/ welcome. env:%s -- %s", env, hostname)
+		fmt.Fprintf(w, "/ welcome v2. env:%s -- %s", env, hostname)
 	}
 }
 

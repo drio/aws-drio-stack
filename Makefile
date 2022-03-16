@@ -33,7 +33,7 @@ cert:
 	  -nodes \
 	  -subj "/CN=$(SERVICE_NAME).$(DOMAIN)"
 
-## server-cert: create x509 cert for the communication between the loadbalancer and the server
+## server-cert: create x509cert for communication between loadbalancer-server
 .PHONY: server-cert
 server-cert:
 	mkdir -p cert
@@ -55,7 +55,7 @@ ssh:
 ## rsync: rsync code to machine
 .PHONY: rsync
 rsync:
-	rsync -avz -e "ssh -i $(EC2_CER)" . $(EC2_USER)@$(EC2_IP):
+	rsync -avz -e "ssh -i $(EC2_CER)" --exclude=src/server . $(EC2_USER)@$(EC2_IP):
 
 mod: go.mod
 
@@ -72,3 +72,54 @@ run-test-server:
 	#curl http://169.254.169.254/latest/meta-data/public-hostname > public/index.html
 	cat /etc/hostname > public/index.html
 	cd public; python -m SimpleHTTPServer $(PORT)
+
+## deploy: deploy new code and restart server
+.PHONY: deploy
+deploy: rsync
+	ssh -i $(EC2_CER) $(EC2_USER)@$(EC2_IP) "make service/restart"
+
+## deploy/service/status: service status
+.PHONY: deploy/service/status
+deploy/service/status:
+	ssh -i $(EC2_CER) $(EC2_USER)@$(EC2_IP) "systemctl status goserver"
+
+## deploy/service/%: install service on remote machine env=(prod, staging)
+.PHONY: deploy/service/%
+deploy/service/%:
+	ssh -i $(EC2_CER) $(EC2_USER)@$(EC2_IP) "sudo make service/install/$(ENV)"
+
+## deploy/uninstall/service: uninstall/remove service from remote machine
+.PHONY: deploy/uninstall/service
+deploy/uninstall/service:
+	ssh -i $(EC2_CER) $(EC2_USER)@$(EC2_IP) "sudo make service/uninstall"
+
+
+## service/install/%: install the systemd service on current machine 
+.PHONY: service/install/%
+service/install/%:
+	cd src; \
+	/usr/local/go/bin/go build server.go && \
+	cd .. && \
+	cat ./service/goserver.service | \
+		sed 's/__ENV__/$*/g' | \
+		sed 's/__DOMAIN__/$(DOMAIN)/g' \
+		> /lib/systemd/system/goserver.service && \
+	chmod 644 /lib/systemd/system/goserver.service && \
+	systemctl daemon-reload && \
+	systemctl enable goserver && \
+	systemctl restart goserver
+
+## service/uninstall: uninstall the systemd service on current machine 
+.PHONY: service/uninstall
+service/uninstall:
+	sudo systemctl stop goserver
+	sudo systemctl disable goserver.service
+	sudo rm -rf /etc/systemd/system/goserver.service /etc/systemd/user/goserver.service
+
+## service/restart: restart service
+.PHONY: service/restart
+service/restart:
+	sudo systemctl stop goserver.service  && \
+	rm -f src/server && \
+	cd src; /usr/local/go/bin/go build server.go && \
+	sudo systemctl start goserver.service
