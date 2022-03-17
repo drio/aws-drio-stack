@@ -1,3 +1,4 @@
+# vim: set foldmethod=indent foldlevel=0:
 ENV?=staging
 DOMAIN?=drtufts.net
 EC2_IP?=
@@ -15,8 +16,7 @@ help:
 
 ## run: start go server dev mode
 .PHONY: run
-run:
-	cd src; go run server.go -domain=$(DOMAIN) -env=$(ENV)
+run: cd src; go run server.go -domain=$(DOMAIN) -env=$(ENV)
 
 ## cert: create x509 cert to interact with the IDP
 .PHONY: cert
@@ -39,11 +39,6 @@ server-cert:
 	-keyout cert/server-key.pem \
 	-out cert/server-cert.pem
 
-## aws/list-ec2: list ec2 instances
-.PHONY: aws/list-ec2
-aws/list-ec2:
-	aws ec2 describe-instances
-
 ## aws/ssh: ssh to instance
 .PHONY: ssh
 ssh:
@@ -54,11 +49,8 @@ ssh:
 rsync:
 	rsync -avz -e "ssh -i $(EC2_CER)" --exclude=src/server . $(EC2_USER)@$(EC2_IP):
 
-mod: go.mod
-
-go.mod:
-	go mod init github.com/drio/aws-drio-stack
-
+## metadata: run a curl request against the server to get the metadata
+.PHONY: metadata
 metadata:
 	@curl -s $(URL)/saml/metadata
 
@@ -119,3 +111,8 @@ service/restart:
 	rm -f src/server && \
 	cd src; /usr/local/go/bin/go build server.go && \
 	sudo systemctl start goserver.service
+
+mod: go.mod
+
+go.mod:
+	go mod init github.com/drio/aws-drio-stack
