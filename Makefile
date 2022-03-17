@@ -75,19 +75,19 @@ run-test-server:
 deploy: rsync
 	ssh -i $(EC2_CER) $(EC2_USER)@$(EC2_IP) "make service/restart"
 
-## deploy/service/status: service status
-.PHONY: deploy/service/status
-deploy/service/status:
+## remote/service/status: service status
+.PHONY: remote/service/status
+remote/service/status:
 	ssh -i $(EC2_CER) $(EC2_USER)@$(EC2_IP) "systemctl status goserver"
 
-## deploy/service/%: install service on remote machine env=(prod, staging)
-.PHONY: deploy/service/install
-deploy/service/install:
+## remote/service/%: install service on remote machine env=(prod, staging)
+.PHONY: remote/service/install
+remote/service/install:
 	ssh -i $(EC2_CER) $(EC2_USER)@$(EC2_IP) "sudo make service/install ENV=$(ENV)"
 
-## deploy/service/install: uninstall/remove service from remote machine
-.PHONY: deploy/service/uninstall
-deploy/service/uninstall:
+## remote/service/install: uninstall/remove service from remote machine
+.PHONY: remote/service/uninstall
+remote/service/uninstall:
 	ssh -i $(EC2_CER) $(EC2_USER)@$(EC2_IP) "sudo make service/uninstall"
 
 ## service/install: install the systemd service on current machine
