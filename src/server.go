@@ -107,7 +107,7 @@ func main() {
 		Key:         keyPair.PrivateKey.(*rsa.PrivateKey),
 		Certificate: keyPair.Leaf,
 		IDPMetadata: idpMetadata,
-		SignRequest: true, // some IdP require the SLO request to be signed
+		//SignRequest: true, // some IdP require the SLO request to be signed
 	})
 
 	log.Println("Domain: ", *domain)
