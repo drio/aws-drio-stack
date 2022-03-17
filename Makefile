@@ -2,7 +2,9 @@
 ENV?=staging
 DOMAIN?=drtufts.net
 EC2_IP?=
-SERVICE_NAME=drioservice
+REMOTE_DIR=/home/ec2-user/services
+SERVICE_NAME=mainserver
+REMOTE_SERVICE_DIR=$(REMOTE_DIR)/$(SERVICE_NAME)
 
 URL=https://$(ENV).$(DOMAIN)
 EC2_USER?=ec2-user
@@ -44,10 +46,14 @@ server-cert:
 ssh:
 	ssh -i $(EC2_CER) $(EC2_USER)@$(EC2_IP)
 
+.PHONY: mkremotedir
+mkremotedir:
+	ssh -i $(EC2_CER) $(EC2_USER)@$(EC2_IP) "mkdir -p $(REMOTE_SERVICE_DIR)"
+
 ## rsync: rsync code to machine
 .PHONY: rsync
-rsync:
-	rsync -avz -e "ssh -i $(EC2_CER)" --exclude=src/server . $(EC2_USER)@$(EC2_IP):
+rsync: mkremotedir
+	rsync -avz -e "ssh -i $(EC2_CER)" --exclude=src/server . $(EC2_USER)@$(EC2_IP):$(REMOTE_SERVICE_DIR)
 
 ## metadata: run a curl request against the server to get the metadata
 .PHONY: metadata
@@ -65,7 +71,7 @@ run-test-server:
 ## deploy: deploy new code and restart server
 .PHONY: deploy
 deploy: rsync
-	ssh -i $(EC2_CER) $(EC2_USER)@$(EC2_IP) "make service/restart"
+	ssh -i $(EC2_CER) $(EC2_USER)@$(EC2_IP) "cd $(REMOTE_SERVICE_DIR) && make service/restart"
 
 ## remote/service/status: service status
 .PHONY: remote/service/status
@@ -75,17 +81,17 @@ remote/service/status:
 ## remote/service/%: install service on remote machine env=(prod, staging)
 .PHONY: remote/service/install
 remote/service/install:
-	ssh -i $(EC2_CER) $(EC2_USER)@$(EC2_IP) "sudo make service/install ENV=$(ENV)"
+	ssh -i $(EC2_CER) $(EC2_USER)@$(EC2_IP) "cd $(REMOTE_SERVICE_DIR) && sudo make service/install ENV=$(ENV)"
 
 ## remote/service/install: uninstall/remove service from remote machine
 .PHONY: remote/service/uninstall
 remote/service/uninstall:
-	ssh -i $(EC2_CER) $(EC2_USER)@$(EC2_IP) "sudo make service/uninstall"
+	ssh -i $(EC2_CER) $(EC2_USER)@$(EC2_IP) "cd $(REMOTE_SERVICE_DIR) && sudo make service/uninstall"
 
 ## service/install: install the systemd service on current machine
 .PHONY: service/install
 service/install:
-	cd src; \
+	cd $(REMOTE_SERVICE_DIR)/src && \
 	/usr/local/go/bin/go build server.go && \
 	cd .. && \
 	cat ./service/goserver.service | \
@@ -108,8 +114,9 @@ service/uninstall:
 .PHONY: service/restart
 service/restart:
 	sudo systemctl stop goserver.service  && \
+	cd $(REMOTE_SERVICE_DIR) && \
 	rm -f src/server && \
-	cd src; /usr/local/go/bin/go build server.go && \
+	cd src && /usr/local/go/bin/go build server.go && \
 	sudo systemctl start goserver.service
 
 mod: go.mod

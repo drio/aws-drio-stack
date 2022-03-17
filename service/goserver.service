@@ -1,7 +1,7 @@
 [Unit]
-Description=Golang server
+Description=Golang main server
 
-After=network-online.target 
+After=network-online.target
 Wants=network-online.target
 
 # Configure service start rate limiting. 
@@ -17,8 +17,8 @@ Type=exec
 User=ec2-user
 Group=ec2-user
 EnvironmentFile=/etc/environment
-WorkingDirectory=/home/ec2-user/src
-ExecStart=/home/ec2-user/src/server -domain=__DOMAIN__ -env=__ENV__
+WorkingDirectory=/home/ec2-user/services/mainserver/src
+ExecStart=/home/ec2-user/services/mainserver/src/server -domain=__DOMAIN__ -env=__ENV__
 
 # Automatically restart the service after a 5-second wait if it exits with a non-zero 
 # exit code. If it restarts more than 5 times in 600 seconds, then the rate limit we 
