@@ -65,8 +65,8 @@ metadata:
 run-test-server:
 	mkdir -p public
 	#curl http://169.254.169.254/latest/meta-data/public-hostname > public/index.html
-	cat /etc/hostname > public/index.html
-	cd public; python -m SimpleHTTPServer 8080
+	echo "this is  the test server" > public/index.html
+	cd public; python3 -m http.server 9000
 
 ## deploy: deploy new code and restart server
 .PHONY: deploy
