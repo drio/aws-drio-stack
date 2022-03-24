@@ -179,11 +179,11 @@ func main() {
 
 	go (func() {
 		log.Println("Listening HTTP:8080... ")
-		http.ListenAndServe("127.0.0.1:8080", nil)
+		http.ListenAndServe(":8080", nil)
 	})()
 
 	log.Println("Listening HTTPS:8443... ")
-	err = http.ListenAndServeTLS("127.0.0.1:8443", "../cert/server-cert.pem", "../cert/server-key.pem", nil)
+	err = http.ListenAndServeTLS(":8443", "../cert/server-cert.pem", "../cert/server-key.pem", nil)
 	if err != nil {
 		log.Fatal(err)
 	}
