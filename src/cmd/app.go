@@ -12,16 +12,16 @@ import (
 )
 
 func root(w http.ResponseWriter, r *http.Request) {
-	subjectID := samlsp.AttributeFromContext(r.Context(), "urn:oasis:names:tc:SAML:attribute:subject-id")
+	uid := samlsp.AttributeFromContext(r.Context(), "uid")
 	w.Header().Set("Content-Type", "text/html")
 	fmt.Fprintf(w, `<!DOCTYPE html>
 <html lang="en"> <meta charset=utf-8>
 <p>
 	Welcome to this amazing app 🤘. <br/>
-	user-agent: %s
-	subjectID: %s
+	user-agent: %s <br/>
+	userid: %s <br/>
 </p>
-`, r.Header["User-Agent"], subjectID)
+`, r.Header["User-Agent"], uid)
 }
 
 func headers(w http.ResponseWriter, req *http.Request) {
@@ -32,6 +32,14 @@ func headers(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
+func cookies(w http.ResponseWriter, req *http.Request) {
+	fmt.Fprintf(w, "Printing cookies..\n")
+	for _, c := range req.Cookies() {
+		fmt.Fprintf(w, "%s: %s\n", c.Name, c.Value)
+	}
+	fmt.Fprintf(w, "\n")
+}
+
 func main() {
 	port := flag.String("port", "", "Port to listen to")
 	if *port == "" {
@@ -39,6 +47,7 @@ func main() {
 	}
 	http.HandleFunc("/", root)
 	http.HandleFunc("/headers", headers)
+	http.HandleFunc("/cookies", cookies)
 	fmt.Printf("Listening on port %s\n", *port)
 	err := http.ListenAndServe(fmt.Sprintf("127.0.0.1:%s", *port), nil)
 	if err != nil {

@@ -49,9 +49,6 @@ func root(w http.ResponseWriter, r *http.Request) {
 // Creates the handler
 // If the URL's path is of the form /apps/<app>/... then we use the <app> part of the Path
 // to proxy the request to the proper service/server.
-// TODO:
-// Currently everything is hardcoded: /apps/test/foo/bar.html -> http://localhost:9000/foo/bar.html
-// If we can't match the path, we respond with a 200 and a default body
 func genHandler(env string) func(http.ResponseWriter, *http.Request) {
 	target := "http://localhost:9000"
 	remote, err := url.Parse(target)
@@ -70,6 +67,7 @@ func genHandler(env string) func(http.ResponseWriter, *http.Request) {
 		sPath := strings.Split(r.URL.Path, "/")
 		if len(sPath) > 2 && sPath[1] == "apps" && sPath[2] == "test" {
 			r.URL.Path = strings.Replace(r.URL.Path, "/apps/test", "", 1)
+			// TODO: Add the SAML attributes you want before proxing
 			proxy.ServeHTTP(w, r)
 		} else {
 			fmt.Fprintf(w, "/ welcome v2. [%s] , env:%s -- %s", r.URL.Path, env, hostname)
@@ -93,43 +91,71 @@ func handler(p *httputil.ReverseProxy) func(http.ResponseWriter, *http.Request) 
 	}
 }
 
+func printHelp(msg string) {
+	if msg != "" {
+		fmt.Println(fmt.Sprintf("ERROR: %s", msg))
+	}
+	fmt.Println(`Usage:
+  $ ./server -env=<staging or prod> -idpurl=<idp metadata url> -rooturl=<server root url>
+
+Examples:
+  $ ./server -env=staging -idpurl="https://samltest.id/saml/idp" -rooturl="https://staging.drtufts.net"
+  $ ./server -env=staging -idpurl="https://shib-idp-stage.uit.tufts.edu/idp/shibboleth" -rooturl="https://staging.drtufts.net"
+  $ ./server -env=prod -idpurl="https://shib-idp.tufts.edu/idp/shibboleth" -rooturl="https://prod.drtufts.net"
+`)
+	os.Exit(0)
+}
+
 func main() {
-	env := flag.String("env", "staging", "Environment: staging or prod")
-	domain := flag.String("domain", "", "Domain name")
+	help := flag.Bool("h", false, "help")
+	env := flag.String("env", "staging", "Environment: [staging or prod]")
+	flagIdpMetadataURL := flag.String("idpurl", "", "idp metadata url")
+	flagRootURL := flag.String("rooturl", "", "service provider main url")
 	flag.Parse()
+
+	if *help {
+		printHelp("")
+	}
+
 	if *env != "staging" && *env != "prod" {
-		log.Println("Only valid environments are: staging or prod")
-		os.Exit(0)
+		printHelp("Only valid environments are: staging or prod")
 	}
-	if *domain == "" {
-		log.Println("Invalid domain name: ", *domain)
-		os.Exit(0)
+
+	if *flagIdpMetadataURL == "" {
+		printHelp("No idpMetadataURL provided")
 	}
+
+	if *flagRootURL == "" {
+		printHelp("No rootURL provided")
+	}
+
+	log.Printf("Env      [%s]\n", *env)
+	log.Printf("IDP url  [%s]\n", *flagIdpMetadataURL)
+	log.Printf("root url [%s]\n", *flagRootURL)
 
 	keyPair, err := tls.LoadX509KeyPair("../cert/saml.cert", "../cert/saml.key")
 	if err != nil {
-		panic(err) // TODO handle error
+		panic(err)
 	}
 	keyPair.Leaf, err = x509.ParseCertificate(keyPair.Certificate[0])
 	if err != nil {
-		panic(err) // TODO handle error
+		panic(err)
 	}
 
-	idpMetadataURL, err := url.Parse("https://samltest.id/saml/idp")
+	rootURL, err := url.Parse(*flagRootURL)
 	if err != nil {
-		panic(err) // TODO handle error
+		panic(err)
 	}
+
+	idpMetadataURL, err := url.Parse(*flagIdpMetadataURL)
+	if err != nil {
+		panic(fmt.Sprintf("Error processing idp metatada url: %v\n", err))
+	}
+
 	idpMetadata, err := samlsp.FetchMetadata(context.Background(), http.DefaultClient,
 		*idpMetadataURL)
 	if err != nil {
-		panic(err) // TODO handle error
-	}
-
-	//"https://staging.drtufts.net"
-	//rootURL, err := url.Parse(fmt.Sprintf("https://%s.%s", *env, *domain))
-	rootURL, err := url.Parse(fmt.Sprintf("http://localhost:8080"))
-	if err != nil {
-		panic(err) // TODO handle error
+		panic(fmt.Sprintf("Error fetching idp smetatada: %v\n", err))
 	}
 
 	samlMiddleware, _ = samlsp.New(samlsp.Options{
@@ -140,26 +166,24 @@ func main() {
 		//SignRequest: true, // some IdP require the SLO request to be signed
 	})
 
-	log.Println("Domain: ", *domain)
-	log.Println("Env: ", *env)
-
 	app := http.HandlerFunc(hello)
 	slo := http.HandlerFunc(logout)
 	http.Handle("/hello", samlMiddleware.RequireAccount(app))
 	http.Handle("/saml/", samlMiddleware)
 	http.Handle("/logout", slo)
 
-	rootHandle := http.HandlerFunc(genHandler(*env))
-	// TODO: check in the other server to make sure you have access to the SAML info
-	http.Handle("/", samlMiddleware.RequireAccount(rootHandle))
+	//rootHandle := http.HandlerFunc(genHandler(*env))
+	//http.Handle("/", samlMiddleware.RequireAccount(rootHandle))
+	rootHandle := http.HandlerFunc(hello)
+	http.Handle("/", rootHandle)
 
 	go (func() {
 		log.Println("Listening HTTP:8080... ")
-		http.ListenAndServe(":8080", nil)
+		http.ListenAndServe("127.0.0.1:8080", nil)
 	})()
 
 	log.Println("Listening HTTPS:8443... ")
-	err = http.ListenAndServeTLS(":8443", "../cert/server-cert.pem", "../cert/server-key.pem", nil)
+	err = http.ListenAndServeTLS("127.0.0.1:8443", "../cert/server-cert.pem", "../cert/server-key.pem", nil)
 	if err != nil {
 		log.Fatal(err)
 	}
