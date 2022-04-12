@@ -21,10 +21,11 @@ import (
 var samlMiddleware *samlsp.Middleware
 
 func logout(w http.ResponseWriter, r *http.Request) {
-	nameID := samlsp.AttributeFromContext(r.Context(), "urn:oasis:names:tc:SAML:attribute:subject-id")
-	url, err := samlMiddleware.ServiceProvider.MakeRedirectLogoutRequest(nameID, "")
+	//nameID := samlsp.AttributeFromContext(r.Context(), "urn:oasis:names:tc:SAML:attribute:subject-id")
+	//url, err := samlMiddleware.ServiceProvider.MakeRedirectLogoutRequest(nameID, "")
+	url, err := url.Parse("https://staging.drtufts.net/bye")
 	if err != nil {
-		panic(err) // TODO handle error
+		panic(err)
 	}
 
 	err = samlMiddleware.Session.DeleteSession(w, r)
@@ -81,7 +82,21 @@ func hello(w http.ResponseWriter, r *http.Request) {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-	fmt.Fprintf(w, "- Hello, %s (%s)!", samlsp.AttributeFromContext(r.Context(), "uid"), hostname)
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	fmt.Fprintf(w, `<p>Congratulations %s,you are authenticated (%s)</p>
+	<p><a href="/logout">Logout</a></p>
+	`, samlsp.AttributeFromContext(r.Context(), "uid"), hostname)
+}
+
+func index(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	fmt.Fprintf(w, `This is the index. Does not require authentication.
+	Try <a href="/hello">this instead</a>.`)
+}
+
+func bye(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	fmt.Fprintf(w, "<p>Sorry to see you go. Bye now.</p>")
 }
 
 func handler(p *httputil.ReverseProxy) func(http.ResponseWriter, *http.Request) {
@@ -164,17 +179,20 @@ func main() {
 		Certificate: keyPair.Leaf,
 		IDPMetadata: idpMetadata,
 		//SignRequest: true, // some IdP require the SLO request to be signed
+		ForceAuthn: true,
 	})
 
 	app := http.HandlerFunc(hello)
 	slo := http.HandlerFunc(logout)
+	byeHandler := http.HandlerFunc(bye)
 	http.Handle("/hello", samlMiddleware.RequireAccount(app))
 	http.Handle("/saml/", samlMiddleware)
 	http.Handle("/logout", slo)
+	http.Handle("/bye", byeHandler)
 
 	//rootHandle := http.HandlerFunc(genHandler(*env))
 	//http.Handle("/", samlMiddleware.RequireAccount(rootHandle))
-	rootHandle := http.HandlerFunc(hello)
+	rootHandle := http.HandlerFunc(index)
 	http.Handle("/", rootHandle)
 
 	go (func() {

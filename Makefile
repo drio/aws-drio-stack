@@ -18,7 +18,8 @@ help:
 
 ## run: start go server dev mode
 .PHONY: run
-run: cd src; go run server.go -domain=$(DOMAIN) -env=$(ENV)
+run:
+	cd src; go run server.go -h
 
 ## cert: create x509 cert to interact with the IDP
 .PHONY: cert
@@ -41,7 +42,7 @@ server-cert:
 	-keyout cert/server-key.pem \
 	-out cert/server-cert.pem
 
-## aws/ssh: ssh to instance
+## ssh: ssh to instance
 .PHONY: ssh
 ssh:
 	ssh -i $(EC2_CER) $(EC2_USER)@$(EC2_IP)
