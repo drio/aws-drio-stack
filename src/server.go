@@ -66,12 +66,16 @@ func genHandler(env string) func(http.ResponseWriter, *http.Request) {
 		}
 
 		sPath := strings.Split(r.URL.Path, "/")
+
+		uid := samlsp.AttributeFromContext(r.Context(), "uid")
+		r.Header.Add("Sb-Uid", uid)
+
 		if len(sPath) > 2 && sPath[1] == "apps" && sPath[2] == "test" {
 			r.URL.Path = strings.Replace(r.URL.Path, "/apps/test", "", 1)
 			// TODO: Add the SAML attributes you want before proxing
 			proxy.ServeHTTP(w, r)
 		} else {
-			fmt.Fprintf(w, "/ welcome v2. [%s] , env:%s -- %s", r.URL.Path, env, hostname)
+			fmt.Fprintf(w, "/ welcome v3!. [%s] , env:%s -- %s", r.URL.Path, env, hostname)
 		}
 	}
 }
@@ -190,10 +194,10 @@ func main() {
 	http.Handle("/logout", slo)
 	http.Handle("/bye", byeHandler)
 
-	//rootHandle := http.HandlerFunc(genHandler(*env))
-	//http.Handle("/", samlMiddleware.RequireAccount(rootHandle))
-	rootHandle := http.HandlerFunc(index)
-	http.Handle("/", rootHandle)
+	rootHandle := http.HandlerFunc(genHandler(*env))
+	http.Handle("/", samlMiddleware.RequireAccount(rootHandle))
+	//rootHandle := http.HandlerFunc(index)
+	//http.Handle("/", rootHandle)
 
 	go (func() {
 		log.Println("Listening HTTP:8080... ")

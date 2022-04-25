@@ -7,21 +7,18 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-
-	"github.com/crewjam/saml/samlsp"
 )
 
 func root(w http.ResponseWriter, r *http.Request) {
-	uid := samlsp.AttributeFromContext(r.Context(), "uid")
 	w.Header().Set("Content-Type", "text/html")
 	fmt.Fprintf(w, `<!DOCTYPE html>
 <html lang="en"> <meta charset=utf-8>
 <p>
-	Welcome to this amazing app 🤘. <br/>
+	Welcome to this amazing app 🤘! <br/>
 	user-agent: %s <br/>
 	userid: %s <br/>
 </p>
-`, r.Header["User-Agent"], uid)
+`, r.Header["User-Agent"], r.Header["Sb-Uid"])
 }
 
 func headers(w http.ResponseWriter, req *http.Request) {
