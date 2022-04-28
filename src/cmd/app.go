@@ -40,7 +40,7 @@ func cookies(w http.ResponseWriter, req *http.Request) {
 func main() {
 	port := flag.String("port", "", "Port to listen to")
 	if *port == "" {
-		*port = "9000"
+		*port = "9001"
 	}
 	http.HandleFunc("/", root)
 	http.HandleFunc("/headers", headers)
