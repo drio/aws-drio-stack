@@ -54,7 +54,33 @@ mkremotedir:
 ## rsync: rsync code to machine
 .PHONY: rsync
 rsync: mkremotedir
-	rsync -avz -e "ssh -i $(EC2_CER)" --exclude=src/server . $(EC2_USER)@$(EC2_IP):$(REMOTE_SERVICE_DIR)
+	rsync -avz \
+		-e "ssh -i $(EC2_CER)" \
+		--exclude=src/server \
+		.  $(EC2_USER)@$(EC2_IP):$(REMOTE_SERVICE_DIR)
+
+## rsync/bin: rsync bin (testing)
+.PHONY: rsync/bin
+rsync/bin:
+	ssh -i $(EC2_CER) $(EC2_USER)@$(EC2_IP) "mkdir -p canonical_app"
+	rsync -avz \
+		-e "ssh -i $(EC2_CER)" \
+		--exclude=src/server \
+		/Users/drio/dev/github.com/drio/go-canonical-app/server.linux.amd64 \
+		/Users/drio/dev/github.com/drio/go-canonical-app/sql/.env \
+		/Users/drio/dev/github.com/drio/go-canonical-app/Makefile \
+		/Users/drio/dev/github.com/drio/go-canonical-app/static \
+		$(EC2_USER)@$(EC2_IP):canonical_app/
+
+## rsync/all: deploy/do all
+.PHONY: rsync/all
+rsync/all:
+	p=`pwd` && \
+	cd /Users/drio/dev/github.com/drio/sk-canonical-app &&  \
+	rm -rf build && make build toserver &&  \
+	cd ~/dev/github.com/drio/go-canonical-app && make build && cd $$p && \
+	make rsync rsync/bin EC2_IP=$$(./scripts/getips.sh staging 1) && \
+	make rsync rsync/bin EC2_IP=$$(./scripts/getips.sh staging 2)
 
 ## metadata: run a curl request against the server to get the metadata
 .PHONY: metadata

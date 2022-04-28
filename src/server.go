@@ -9,6 +9,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"mime"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
@@ -51,7 +52,7 @@ func root(w http.ResponseWriter, r *http.Request) {
 // If the URL's path is of the form /apps/<app>/... then we use the <app> part of the Path
 // to proxy the request to the proper service/server.
 func genHandler(env string) func(http.ResponseWriter, *http.Request) {
-	target := "http://localhost:9000"
+	target := "http://127.0.0.1:9000"
 	remote, err := url.Parse(target)
 	if err != nil {
 		panic(err)
@@ -65,14 +66,20 @@ func genHandler(env string) func(http.ResponseWriter, *http.Request) {
 			os.Exit(1)
 		}
 
-		sPath := strings.Split(r.URL.Path, "/")
-
 		uid := samlsp.AttributeFromContext(r.Context(), "uid")
+		// TODO: Add the SAML attributes you want before proxing
 		r.Header.Add("Sb-Uid", uid)
 
-		if len(sPath) > 2 && sPath[1] == "apps" && sPath[2] == "test" {
-			r.URL.Path = strings.Replace(r.URL.Path, "/apps/test", "", 1)
-			// TODO: Add the SAML attributes you want before proxing
+		log.Printf("DRD: %s\n", r.URL.Path)
+		sPath := strings.Split(r.URL.Path, "/")
+		if len(sPath) > 2 && sPath[1] == "apps" && sPath[2] == "canonical" {
+			// Set the proper content-type
+			fp := r.URL.Path
+			ext := fp[len(fp)-3:]
+			mimeString := mime.TypeByExtension(ext)
+			w.Header().Set("Content-Type", mimeString)
+			log.Printf("DRD: %s %s %s\n", fp, ext, mimeString)
+			r.URL.Path = strings.TrimPrefix(fp, "/apps/canonical")
 			proxy.ServeHTTP(w, r)
 		} else {
 			fmt.Fprintf(w, "/ welcome v3!. [%s] , env:%s -- %s", r.URL.Path, env, hostname)
