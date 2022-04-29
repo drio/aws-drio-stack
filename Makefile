@@ -79,7 +79,7 @@ rsync/all:
 	cd /Users/drio/dev/github.com/drio/sk-canonical-app &&  rm -rf build && make build toserver &&  \
 	cd ~/dev/github.com/drio/go-canonical-app && make build && \
 	cd $$p && \
-	make rsync rsync/bin EC2_IP=$$(./scripts/getips.sh staging 1) && \
+	(make rsync rsync/bin EC2_IP=$$(./scripts/getips.sh staging 1) &) && \
 	make rsync rsync/bin EC2_IP=$$(./scripts/getips.sh staging 2)
 
 ## metadata: run a curl request against the server to get the metadata
