@@ -17,8 +17,8 @@ Type=exec
 User=ec2-user
 Group=ec2-user
 EnvironmentFile=/etc/environment
-WorkingDirectory=/home/ec2-user/services/mainserver/src
-ExecStart=/home/ec2-user/services/mainserver/service/run_goserver.sh
+WorkingDirectory=/home/ec2-user/services/goserver/src
+ExecStart=/home/ec2-user/services/goserver/service/run_goserver.sh
 
 # Automatically restart the service after a 5-second wait if it exits with a non-zero 
 # exit code. If it restarts more than 5 times in 600 seconds, then the rate limit we 

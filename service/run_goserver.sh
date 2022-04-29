@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-cd /home/ec2-user/services/mainserver/src
+cd /home/ec2-user/services/goserver/src
 rm -f goserver
 /usr/local/go/bin/go build -o goserver
 

@@ -3,12 +3,14 @@ ENV?=staging
 DOMAIN?=drtufts.net
 EC2_IP?=
 REMOTE_DIR=/home/ec2-user/services
-SERVICE_NAME=mainserver
+SERVICE_NAME=goserver
 REMOTE_SERVICE_DIR=$(REMOTE_DIR)/$(SERVICE_NAME)
 
 URL=https://$(ENV).$(DOMAIN)
 EC2_USER?=ec2-user
 EC2_CER?=~drio/.ssh/drio_aws_tufts.cer
+
+SSH=ssh -i $(EC2_CER) $(EC2_USER)@$(EC2_IP)
 
 ## help: print this help message
 .PHONY: help
@@ -45,11 +47,11 @@ server-cert:
 ## ssh: ssh to instance
 .PHONY: ssh
 ssh:
-	ssh -i $(EC2_CER) $(EC2_USER)@$(EC2_IP)
+	$(SSH)	
 
 .PHONY: mkremotedir
 mkremotedir:
-	ssh -i $(EC2_CER) $(EC2_USER)@$(EC2_IP) "mkdir -p $(REMOTE_SERVICE_DIR)"
+	$(SSH) "mkdir -p $(REMOTE_SERVICE_DIR)"
 
 ## rsync: rsync code to machine
 .PHONY: rsync
@@ -98,22 +100,28 @@ run-test-server:
 ## deploy: deploy new code and restart server
 .PHONY: deploy
 deploy: rsync
-	ssh -i $(EC2_CER) $(EC2_USER)@$(EC2_IP) "cd $(REMOTE_SERVICE_DIR) && make service/restart"
+	$(SSH) "cd $(REMOTE_SERVICE_DIR) && make service/restart"
 
 ## remote/service/status: service status
 .PHONY: remote/service/status
 remote/service/status:
-	ssh -i $(EC2_CER) $(EC2_USER)@$(EC2_IP) "systemctl status goserver"
+	$(SSH) "systemctl status goserver"
 
 ## remote/service/%: install service on remote machine env=(prod, staging)
 .PHONY: remote/service/install
 remote/service/install:
-	ssh -i $(EC2_CER) $(EC2_USER)@$(EC2_IP) "cd $(REMOTE_SERVICE_DIR) && sudo make service/install ENV=$(ENV)"
+	$(SSH) "cd $(REMOTE_SERVICE_DIR) && sudo make service/install ENV=$(ENV)"
 
 ## remote/service/install: uninstall/remove service from remote machine
 .PHONY: remote/service/uninstall
 remote/service/uninstall:
-	ssh -i $(EC2_CER) $(EC2_USER)@$(EC2_IP) "cd $(REMOTE_SERVICE_DIR) && sudo make service/uninstall"
+	$(SSH) "cd $(REMOTE_SERVICE_DIR) && sudo make service/uninstall"
+
+## remote/service/tail: tail logs
+.PHONY: remote/service/tail
+remote/service/tail:
+	$(SSH) "cd $(REMOTE_SERVICE_DIR) && sudo make service/tail"
+
 
 ## service/install: install the systemd service on current machine
 .PHONY: service/install
@@ -135,6 +143,13 @@ service/uninstall:
 .PHONY: service/restart
 service/restart:
 	sudo systemctl restart goserver.service
+
+## service/tail: tail
+.PHONY: service/tail
+service/tail:
+	journalctl -u $(SERVICE_NAME)	 | tail
+
+
 
 mod: go.mod
 
