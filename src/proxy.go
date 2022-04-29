@@ -40,7 +40,33 @@ func logout(w http.ResponseWriter, r *http.Request) {
 
 func bye(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	fmt.Fprintf(w, "<p>Sorry to see you go. Bye now.</p>")
+	fmt.Fprintf(w, `
+  <style>
+    :root {
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+        Segoe UI, Roboto, Helvetica Neue, Arial, Noto Sans, sans-serif,
+        "Apple Color Emoji", "Segoe UI Emoji", Segoe UI Symbol, "Noto Color Emoji";
+      margin: 0 auto;
+      width: 75%%;
+      background: white;
+      padding: 10px;
+    }
+
+    .container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    img {
+      width: 50%%;
+    }
+  </style>
+  <div class="container">
+    <p>Sorry to see you go. Bye now.</p>
+    <img src="https://i.giphy.com/media/k3YNVBrbn2KqbXEgDJ/giphy.webp"/>
+  </div>
+  `)
 }
 
 // appDirNames: "canonical"
