@@ -118,13 +118,7 @@ remote/service/uninstall:
 ## service/install: install the systemd service on current machine
 .PHONY: service/install
 service/install:
-	cd $(REMOTE_SERVICE_DIR)/src && \
-	/usr/local/go/bin/go build server.go && \
-	cd .. && \
-	cat ./service/goserver.service | \
-		sed 's/__ENV__/$(ENV)/g' | \
-		sed 's/__DOMAIN__/$(DOMAIN)/g' \
-		> /lib/systemd/system/goserver.service && \
+	cat ./service/goserver.service > /lib/systemd/system/goserver.service && \
 	chmod 644 /lib/systemd/system/goserver.service && \
 	systemctl daemon-reload && \
 	systemctl enable goserver && \
@@ -140,11 +134,7 @@ service/uninstall:
 ## service/restart: restart service
 .PHONY: service/restart
 service/restart:
-	sudo systemctl stop goserver.service  && \
-	cd $(REMOTE_SERVICE_DIR) && \
-	rm -f src/server && \
-	cd src && /usr/local/go/bin/go build server.go && \
-	sudo systemctl start goserver.service
+	sudo systemctl restart goserver.service
 
 mod: go.mod
 
