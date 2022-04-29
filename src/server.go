@@ -14,6 +14,7 @@ import (
 	"net/http/httputil"
 	"net/url"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/crewjam/saml/samlsp"
@@ -48,11 +49,49 @@ func root(w http.ResponseWriter, r *http.Request) {
 	`)
 }
 
+const (
+	redirectHostURL string = "http://127.0.0.1"
+	pathAppsName    string = "apps"
+)
+
+type proxyMatch struct {
+	appName, targetPort string
+}
+
+// appDirNames: "canonical"
+// targetPort: port to proxy to in localhost
+func proxyRequest(w http.ResponseWriter, r *http.Request, match proxyMatch) bool {
+	log.Printf("proxyRequest(), r.URL.Path=%s\n", r.URL.Path)
+	sPath := strings.Split(r.URL.Path, "/")
+
+	if len(sPath) > 2 && sPath[1] == pathAppsName && sPath[2] == match.appName {
+		// Set the proper content-type
+		ext := filepath.Ext(r.URL.Path)
+		mimeString := mime.TypeByExtension(ext)
+		if len(mimeString) > 0 {
+			w.Header().Set("Content-Type", mimeString)
+			log.Printf("proxyRequest(): ext='%s' mimeString='%s'\n", ext, mimeString)
+		}
+
+		// Before proxing, change the path
+		r.URL.Path = strings.TrimPrefix(r.URL.Path, fmt.Sprintf("/%s/%s", pathAppsName, match.appName))
+		targetUrl := fmt.Sprintf("%s:%s", redirectHostURL, match.targetPort)
+		remote, err := url.Parse(targetUrl)
+		if err != nil {
+			log.Printf("proxyRequest(): ERROR: %s", err)
+			return false
+		}
+		proxy := httputil.NewSingleHostReverseProxy(remote)
+		proxy.ServeHTTP(w, r)
+		return true
+	}
+	return false
+}
+
 // Creates the handler
 // If the URL's path is of the form /apps/<app>/... then we use the <app> part of the Path
 // to proxy the request to the proper service/server.
 func genHandler(env string) func(http.ResponseWriter, *http.Request) {
-
 	return func(w http.ResponseWriter, r *http.Request) {
 		hostname, err := os.Hostname()
 		if err != nil {
@@ -61,45 +100,18 @@ func genHandler(env string) func(http.ResponseWriter, *http.Request) {
 		}
 
 		uid := samlsp.AttributeFromContext(r.Context(), "uid")
-		// TODO: Add the SAML attributes you want before proxing
 		r.Header.Add("Sb-Uid", uid)
 
-		log.Printf("DRD: %s\n", r.URL.Path)
-		sPath := strings.Split(r.URL.Path, "/")
-		if len(sPath) > 2 && sPath[1] == "apps" && sPath[2] == "canonical" {
-			// Set the proper content-type
-			fp := r.URL.Path
-			ext := fp[len(fp)-3:]
-			mimeString := mime.TypeByExtension(ext)
-			w.Header().Set("Content-Type", mimeString)
-			log.Printf("DRD: %s %s %s\n", fp, ext, mimeString)
-			r.URL.Path = strings.TrimPrefix(fp, "/apps/canonical")
-
-			target := "http://127.0.0.1:9000"
-			remote, err := url.Parse(target)
-			if err != nil {
-				panic(err)
+		gotProxied := false
+		matches := []proxyMatch{{"canonical", "9000"}, {"test", "9001"}}
+		for _, pm := range matches {
+			gotProxied = proxyRequest(w, r, pm)
+			if gotProxied {
+				break
 			}
-			proxy := httputil.NewSingleHostReverseProxy(remote)
-			proxy.ServeHTTP(w, r)
-		} else if len(sPath) > 2 && sPath[1] == "apps" && sPath[2] == "test" {
-			// Set the proper content-type
-			fp := r.URL.Path
-			ext := fp[len(fp)-3:]
-			mimeString := mime.TypeByExtension(ext)
-			w.Header().Set("Content-Type", mimeString)
-			log.Printf("DRD: %s %s %s\n", fp, ext, mimeString)
-			r.URL.Path = strings.TrimPrefix(fp, "/apps/test")
-
-			target := "http://127.0.0.1:9001"
-			remote, err := url.Parse(target)
-			if err != nil {
-				panic(err)
-			}
-			proxy := httputil.NewSingleHostReverseProxy(remote)
-			proxy.ServeHTTP(w, r)
-		} else {
-			fmt.Fprintf(w, "/ welcome v3!. [%s] , env:%s -- %s", r.URL.Path, env, hostname)
+		}
+		if !gotProxied {
+			fmt.Fprintf(w, "👋 / welcome v3!. [%s] , env:%s -- %s", r.URL.Path, env, hostname)
 		}
 	}
 }
