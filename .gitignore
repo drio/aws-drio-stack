@@ -7,3 +7,4 @@ template.instance.yml
 template.instance.*
 service/goserver.service.*
 src/server
+Session*.vim

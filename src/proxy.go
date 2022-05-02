@@ -150,8 +150,8 @@ func rootPage(w http.ResponseWriter, r *http.Request) {
     <p class="served"> Served from: (%s)</p>
     <p>List of available apps:</p>
     <ul>
-      <li><a href="/apps/test">test</a></li>
-      <li><a href="/apps/canonical">canonical</a></li>
+      <li>1️⃣ <a href="/apps/test">test</a></li>
+      <li>2️⃣ <a href="/apps/canonical">canonical</a></li>
     </ul>
     <p class="button"><a href="/logout">Logout</a></p>
   </div>

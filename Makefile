@@ -6,6 +6,8 @@ REMOTE_DIR=/home/ec2-user/services
 SERVICE_NAME=goserver
 REMOTE_SERVICE_DIR=$(REMOTE_DIR)/$(SERVICE_NAME)
 
+RGO=/usr/local/go/bin/go
+
 URL=https://$(ENV).$(DOMAIN)
 EC2_USER?=ec2-user
 EC2_CER?=~drio/.ssh/drio_aws_tufts.cer
@@ -43,6 +45,13 @@ server-cert:
 	-nodes -x509 -subj "/C=/ST=/L=/O=/CN=localhost" \
 	-keyout cert/server-key.pem \
 	-out cert/server-cert.pem
+
+mod: go.mod
+
+go.mod:
+	go mod init github.com/drio/aws-drio-stack
+	go mode tidy
+	cd src; go get
 
 ## ssh: ssh to instance
 .PHONY: ssh
@@ -98,16 +107,16 @@ run-test-server:
 	cd public; python3 -m http.server 9000
 
 ## deploy: deploy new code and restart server
+# NOTE: the script that starts the server will recompile the binary
 .PHONY: deploy
-deploy: rsync
-	$(SSH) "cd $(REMOTE_SERVICE_DIR) && make service/restart"
+deploy: rsync remote/service/restart
 
 ## remote/service/status: service status
 .PHONY: remote/service/status
 remote/service/status:
-	$(SSH) "systemctl status goserver"
+	$(SSH) "systemctl status $(SERVICE_NAME)"
 
-## remote/service/%: install service on remote machine env=(prod, staging)
+## remote/service/install: install service on remote machine env=(prod, staging)
 .PHONY: remote/service/install
 remote/service/install:
 	$(SSH) "cd $(REMOTE_SERVICE_DIR) && sudo make service/install ENV=$(ENV)"
@@ -122,36 +131,33 @@ remote/service/uninstall:
 remote/service/tail:
 	$(SSH) "cd $(REMOTE_SERVICE_DIR) && sudo make service/tail"
 
+## remote/service/restart: restart service
+.PHONY: remote/service/restart
+remote/service/restart:
+	$(SSH) "cd $(REMOTE_SERVICE_DIR) && make service/restart"
 
 ## service/install: install the systemd service on current machine
 .PHONY: service/install
 service/install:
-	cat ./service/goserver.service > /lib/systemd/system/goserver.service && \
-	chmod 644 /lib/systemd/system/goserver.service && \
+	cat ./service/$(SERVICE_NAME).service > /lib/systemd/system/$(SERVICE_NAME).service && \
+	chmod 644 /lib/systemd/system/$(SERVICE_NAME).service && \
 	systemctl daemon-reload && \
-	systemctl enable goserver && \
-	systemctl restart goserver
+	systemctl enable $(SERVICE_NAME) && \
+	systemctl restart $(SERVICE_NAME)
 
 ## service/uninstall: uninstall the systemd service on current machine
 .PHONY: service/uninstall
 service/uninstall:
-	sudo systemctl stop goserver
-	sudo systemctl disable goserver.service
-	sudo rm -rf /etc/systemd/system/goserver.service /etc/systemd/user/goserver.service
-
-## service/restart: restart service
-.PHONY: service/restart
-service/restart:
-	sudo systemctl restart goserver.service
+	sudo systemctl stop $(SERVICE_NAME)
+	sudo systemctl disable $(SERVICE_NAME).service
+	sudo rm -rf /etc/systemd/system/$(SERVICE_NAME).service /etc/systemd/user/$(SERVICE_NAME).service
 
 ## service/tail: tail
 .PHONY: service/tail
 service/tail:
 	journalctl -u $(SERVICE_NAME)	 | tail
 
-
-
-mod: go.mod
-
-go.mod:
-	go mod init github.com/drio/aws-drio-stack
+## service/%: * service (start, stop, restart)
+.PHONY: service/%
+service/%:
+	sudo systemctl $* $(SERVICE_NAME).service
