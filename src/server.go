@@ -96,6 +96,8 @@ func main() {
 
 	//app := http.HandlerFunc(hello)
 	//http.Handle("/hello", samlMiddleware.RequireAccount(app))
+	/* handles the twilio callbacks */
+	http.Handle("/callback", http.HandlerFunc(twilioCallbackHandler))
 	http.Handle("/saml/", samlMiddleware)
 	http.Handle("/logout", http.HandlerFunc(logout))
 	http.Handle("/bye", http.HandlerFunc(bye))

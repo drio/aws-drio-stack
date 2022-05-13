@@ -23,6 +23,17 @@ type proxyMatch struct {
 	appName, targetPort string
 }
 
+func twilioCallbackHandler(w http.ResponseWriter, r *http.Request) {
+	log.Printf("twilio callback request")
+	remote, err := url.Parse("http://localhost:9002")
+	if err != nil {
+		log.Printf("twilioCallbackHandler(): ERROR: %s", err)
+		return
+	}
+	proxy := httputil.NewSingleHostReverseProxy(remote)
+	proxy.ServeHTTP(w, r)
+}
+
 func logout(w http.ResponseWriter, r *http.Request) {
 	url, err := url.Parse("https://staging.drtufts.net/bye")
 	if err != nil {
@@ -149,10 +160,9 @@ func rootPage(w http.ResponseWriter, r *http.Request) {
     <p>🎉 Congratulations <span class="uid">%s</span>, you are authenticated. </p>
     <p class="served"> Served from: (%s)</p>
     <p>List of available apps:</p>
-    <ul>
-      <li>1️⃣ <a href="/apps/test">test</a></li>
-      <li>2️⃣ <a href="/apps/canonical">canonical</a></li>
-    </ul>
+      <div>1. <a href="/apps/test">test</a></div>
+      <div>2. <a href="/apps/canonical">canonical</a></div>
+      <div>3. <a href="/apps/sms">sms</a></div>
     <p class="button"><a href="/logout">Logout</a></p>
   </div>
   `, samlsp.AttributeFromContext(r.Context(), "uid"), hostname)
@@ -164,10 +174,10 @@ func rootPage(w http.ResponseWriter, r *http.Request) {
 func genRootHandler(env string) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		uid := samlsp.AttributeFromContext(r.Context(), "uid")
-		r.Header.Add("Sb-Uid", uid)
+		r.Header.Add("shib-uid", uid)
 
 		gotProxied := false
-		matches := []proxyMatch{{"canonical", "9000"}, {"test", "9001"}}
+		matches := []proxyMatch{{"canonical", "9000"}, {"test", "9001"}, {"sms", "9002"}}
 		for _, pm := range matches {
 			gotProxied = proxyRequest(w, r, pm)
 			if gotProxied {
